@@ -45,6 +45,6 @@ public class QueryEndpoint extends AbstractEndpoint {
     protected void customEndpointHandlers(final ChannelPipeline pipeline) {
         pipeline
             .addLast(new HttpClientCodec())
-            .addLast(new QueryHandler(this, responseBuffer()));
+            .addLast(new SherlockQueryHandler(this, responseBuffer()));
     }
 }
