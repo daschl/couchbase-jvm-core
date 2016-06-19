@@ -41,8 +41,6 @@ import com.couchbase.client.core.metrics.RuntimeMetricsCollector;
 import com.couchbase.client.core.retry.BestEffortRetryStrategy;
 import com.couchbase.client.core.retry.RetryStrategy;
 import com.couchbase.client.core.time.Delay;
-import com.lmax.disruptor.BlockingWaitStrategy;
-import com.lmax.disruptor.WaitStrategy;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.util.concurrent.DefaultThreadFactory;
@@ -207,7 +205,6 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
     private final int socketConnectTimeout;
     private final boolean callbacksOnIoPool;
     private final long disconnectTimeout;
-    private final WaitStrategy requestBufferWaitStrategy;
 
     private static final int MAX_ALLOWED_INSTANCES = 1;
     private static volatile int instanceCounter = 0;
@@ -337,7 +334,6 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
         } else {
             metricsCollectorSubscription = null;
         }
-        requestBufferWaitStrategy = builder.requestBufferWaitStrategy == null ? new BlockingWaitStrategy() : builder.requestBufferWaitStrategy;
     }
 
     public static DefaultCoreEnvironment create() {
@@ -693,11 +689,6 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
         return disconnectTimeout;
     }
 
-    @Override
-    public WaitStrategy requestBufferWaitStrategy() {
-        return requestBufferWaitStrategy;
-    }
-
     public static class Builder {
 
         private boolean dcpEnabled = DCP_ENABLED;
@@ -742,10 +733,9 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
         private int socketConnectTimeout = SOCKET_CONNECT_TIMEOUT;
         private boolean callbacksOnIoPool = CALLBACKS_ON_IO_POOL;
         private long disconnectTimeout = DISCONNECT_TIMEOUT;
-        private WaitStrategy requestBufferWaitStrategy;
 
-        private MetricsCollectorConfig runtimeMetricsCollectorConfig;
-        private LatencyMetricsCollectorConfig networkLatencyMetricsCollectorConfig;
+        private MetricsCollectorConfig runtimeMetricsCollectorConfig = null;
+        private LatencyMetricsCollectorConfig networkLatencyMetricsCollectorConfig = null;
         private LoggingConsumer defaultMetricsLoggingConsumer = LoggingConsumer.create();
 
         protected Builder() {
@@ -1218,16 +1208,6 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
             return this;
         }
 
-        /**
-         * Sets a custom waiting strategy for requests. Default is {@link BlockingWaitStrategy}.
-         *
-         * @param waitStrategy waiting strategy
-         */
-        public Builder requestBufferWaitStrategy(WaitStrategy waitStrategy) {
-            this.requestBufferWaitStrategy = waitStrategy;
-            return this;
-        }
-
         public DefaultCoreEnvironment build() {
             return new DefaultCoreEnvironment(this);
         }
@@ -1286,7 +1266,6 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
         sb.append(", dcpConnectionName=").append(dcpConnectionName);
         sb.append(", callbacksOnIoPool=").append(callbacksOnIoPool);
         sb.append(", disconnectTimeout=").append(disconnectTimeout);
-        sb.append(", requestBufferWaitStrategy=").append(requestBufferWaitStrategy);
 
         return sb;
     }
